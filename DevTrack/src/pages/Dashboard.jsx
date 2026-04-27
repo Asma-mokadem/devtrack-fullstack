@@ -5,7 +5,7 @@ import TechPieChart from "../components/charts/TechPieChart";
 import MonthlyBarChart from "../components/charts/MonthlyBarChart";
 import SkillLineChart from "../components/charts/SkillLineChart";
 import { useDev } from "../context/DevContext";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/AuthContext.jsx";
 import { FolderKanban, Clock, Star, CheckCircle, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -47,10 +47,9 @@ export default function Dashboard() {
 
   return (
     <Layout title="Dashboard" onSearch={setSearch}>
-      {/* Greeting */}
       <div className="mb-7">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Good day, {user?.name?.split(" ")[0] || "Developer"} 👋
+          Good day, {user?.name?.split(" ")[0] || "Developer"}
         </h2>
         <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
           Here's an overview of your developer journey.

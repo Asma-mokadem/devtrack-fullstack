@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
 
 export default function Login() {

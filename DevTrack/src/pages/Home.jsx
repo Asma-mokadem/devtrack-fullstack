@@ -72,15 +72,8 @@ export default function Home() {
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <button
-            onClick={() => navigate("/register")}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-7 py-3.5 rounded-xl shadow-lg shadow-indigo-200 dark:shadow-indigo-900/40 transition-all hover:-translate-y-0.5"
-          >
-            Start for free
-            <ArrowRight size={16} />
-          </button>
-          <button
             onClick={() => navigate("/login")}
-            className="flex items-center gap-2 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-200 font-semibold px-7 py-3.5 rounded-xl border border-gray-200 dark:border-slate-700 transition-all"
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-7 py-3.5 rounded-xl shadow-lg shadow-indigo-200 dark:shadow-indigo-900/40 transition-all hover:-translate-y-0.5"
           >
             Sign in
           </button>

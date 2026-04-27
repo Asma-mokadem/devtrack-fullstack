@@ -26,12 +26,6 @@ export default function Navbar({ title = "Dashboard", onSearch }) {
           />
         </div>
 
-        {/* Bell */}
-        <button className="relative w-9 h-9 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-center text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700 transition">
-          <Bell size={15} />
-          <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-indigo-500" />
-        </button>
-
         {/* New Project CTA */}
         <button
           onClick={() => navigate("/projects")}
