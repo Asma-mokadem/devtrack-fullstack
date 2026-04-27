@@ -1,91 +1,130 @@
-import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { Eye, EyeOff, AlertCircle } from "lucide-react";
 
 export default function Login() {
   const navigate = useNavigate();
+  const { user, login } = useAuth();
 
-  const [email, setEmail] = useState("");
+  const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [showPw, setShowPw]     = useState(false);
+  const [error, setError]       = useState("");
+  const [loading, setLoading]   = useState(false);
 
-  // Si deja connecte naviger vers dashboard
+  // Redirect if already logged in
   useEffect(() => {
-    const user = localStorage.getItem("user");
-    if (user) {
-      navigate("/dashboard"); 
-    }
-  }, [navigate]);
+    if (user) navigate("/dashboard", { replace: true });
+  }, [user, navigate]);
 
-  const handleLogin = (e) => {
+  const validate = () => {
+    if (!email.trim()) return "Please enter your email.";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "Please enter a valid email.";
+    if (!password) return "Please enter your password.";
+    return null;
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
     setError("");
+    const validErr = validate();
+    if (validErr) { setError(validErr); return; }
 
-    // Vérifier si utilisateur existe dans localStorage ou non
-    const storedUser = JSON.parse(localStorage.getItem("registeredUser"));
+    setLoading(true);
+    // small artificial delay for UX
+    await new Promise((r) => setTimeout(r, 400));
+    const result = login({ email, password });
+    setLoading(false);
 
-    if (!storedUser) {
-      setError("No account found. Please register first.");
-      return;
-    }
-
-    if (email === storedUser.email && password === storedUser.password) {
-      localStorage.setItem("user", JSON.stringify(storedUser));
-      navigate("/dashboard");
-    } else {
-      setError("Invalid email or password.");
-    }
+    if (!result.ok) { setError(result.error); return; }
+    navigate("/dashboard", { replace: true });
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-indigo-900 via-slate-900 to-indigo-950">
-      <form
-        onSubmit={handleLogin}
-        className="bg-slate-900 p-10 rounded-3xl shadow-xl border border-slate-800 w-96"
-      >
-        <h2 className="text-3xl font-bold mb-6 text-center text-white">
-          Login
-        </h2>
+    <div className="min-h-screen flex items-center justify-center bg-[#f8f9fc] dark:bg-[#0a0f1e] px-4">
+      <div className="w-full max-w-md">
+        {/* Logo */}
+        <div className="flex justify-center mb-8">
+          <Link to="/home" className="flex items-center gap-2.5">
+            <span className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center shadow-md shadow-indigo-200">
+              <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
+                <rect x="2" y="2" width="5" height="5" rx="1.5" fill="white" fillOpacity="0.95"/>
+                <rect x="9" y="2" width="5" height="5" rx="1.5" fill="white" fillOpacity="0.6"/>
+                <rect x="2" y="9" width="5" height="5" rx="1.5" fill="white" fillOpacity="0.6"/>
+                <rect x="9" y="9" width="5" height="5" rx="1.5" fill="white" fillOpacity="0.3"/>
+              </svg>
+            </span>
+            <span className="text-xl font-bold text-gray-900 dark:text-white">DevTrack</span>
+          </Link>
+        </div>
 
-        {error && (
-          <p className="text-red-500 text-sm mb-4 text-center">{error}</p>
-        )}
+        <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl p-8 shadow-xl shadow-gray-100 dark:shadow-black/30">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Welcome back</h2>
+          <p className="text-sm text-gray-500 dark:text-slate-400 mb-7">Sign in to your DevTrack account</p>
 
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full mb-4 p-3 rounded-lg bg-slate-800 border border-slate-700 placeholder-gray-400 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-          required
-        />
+          {error && (
+            <div className="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/40 text-red-600 dark:text-red-400 text-sm rounded-xl px-4 py-3 mb-5">
+              <AlertCircle size={15} className="shrink-0" />
+              {error}
+            </div>
+          )}
 
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full mb-6 p-3 rounded-lg bg-slate-800 border border-slate-700 placeholder-gray-400 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-          required
-        />
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Email */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">
+                Email
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="w-full px-4 py-3 text-sm rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-800 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-700 focus:border-transparent transition"
+              />
+            </div>
 
-        <button
-          type="submit"
-          className="w-full bg-indigo-600 py-3 rounded-xl hover:bg-indigo-500 transition text-white font-semibold"
-        >
-          Login
-        </button>
+            {/* Password */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showPw ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full px-4 py-3 pr-11 text-sm rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-800 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-700 focus:border-transparent transition"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPw(!showPw)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 transition-colors"
+                >
+                  {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
 
-        <p className="text-center text-gray-400 mt-4">
-          Don't have an account?{" "}
-          <span
-            className="text-indigo-500 hover:underline cursor-pointer"
-            onClick={() => navigate("/register")}
-          >
-            Create Account
-          </span>
-        </p>
-      </form>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition-colors shadow-md shadow-indigo-200 dark:shadow-indigo-900/30 mt-2"
+            >
+              {loading ? "Signing in…" : "Sign in"}
+            </button>
+          </form>
+
+          <p className="text-center text-sm text-gray-500 dark:text-slate-400 mt-6">
+            Don't have an account?{" "}
+            <Link to="/register" className="text-indigo-600 dark:text-indigo-400 font-semibold hover:underline">
+              Create account
+            </Link>
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

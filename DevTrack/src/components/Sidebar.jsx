@@ -6,7 +6,10 @@ import {
   Settings,
   LogOut,
   User,
+  ChevronRight,
 } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
+import { useDev } from "../context/DevContext";
 
 const NAV = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -16,83 +19,109 @@ const NAV = [
 ];
 
 export default function Sidebar() {
-  const location = useLocation();
+  const location  = useLocation();
   const navigate  = useNavigate();
+  const { user, logout } = useAuth();
+  const { projects, skills } = useDev();
 
-  const user = (() => {
-    try { return JSON.parse(localStorage.getItem("user")) || {}; } catch { return {}; }
-  })();
+  const counts = {
+    "/projects": projects.length,
+    "/skills":   skills.length,
+  };
 
   const handleLogout = () => {
-    localStorage.removeItem("user");
+    logout();
     navigate("/login");
   };
 
+  const initial = user?.name?.charAt(0).toUpperCase() || "U";
+
   return (
-    <aside
-      style={{ fontFamily: "'DM Sans', sans-serif" }}
-      className="w-60 min-h-screen bg-white dark:bg-[#0d1526] border-r border-slate-200/70 dark:border-slate-800 flex flex-col shrink-0"
-    >
+    <aside className="w-60 min-h-screen bg-white dark:bg-slate-900 border-r border-gray-100 dark:border-slate-800 flex flex-col shrink-0">
       {/* Logo */}
-      <div className="px-5 py-5 border-b border-slate-100 dark:border-slate-800">
-        <Link to="/dashboard" className="flex items-center gap-2.5">
-          <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-700 flex items-center justify-center shadow-md">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <rect x="1" y="1" width="5" height="5" rx="1" fill="white" fillOpacity="0.9"/>
-              <rect x="8" y="1" width="5" height="5" rx="1" fill="white" fillOpacity="0.6"/>
-              <rect x="1" y="8" width="5" height="5" rx="1" fill="white" fillOpacity="0.6"/>
-              <rect x="8" y="8" width="5" height="5" rx="1" fill="white" fillOpacity="0.3"/>
+      <div className="px-5 h-16 border-b border-gray-100 dark:border-slate-800 flex items-center">
+        <Link to="/dashboard" className="flex items-center gap-2.5 group">
+          <span className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center shadow-md shadow-indigo-200 dark:shadow-indigo-900/40 group-hover:bg-indigo-700 transition-colors">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <rect x="2" y="2" width="5" height="5" rx="1.5" fill="white" fillOpacity="0.95"/>
+              <rect x="9" y="2" width="5" height="5" rx="1.5" fill="white" fillOpacity="0.6"/>
+              <rect x="2" y="9" width="5" height="5" rx="1.5" fill="white" fillOpacity="0.6"/>
+              <rect x="9" y="9" width="5" height="5" rx="1.5" fill="white" fillOpacity="0.3"/>
             </svg>
           </span>
-          <span className="text-[15px] font-semibold tracking-tight text-slate-900 dark:text-white">
+          <span className="text-[15px] font-bold tracking-tight text-gray-900 dark:text-white">
             DevTrack
           </span>
         </Link>
       </div>
 
-      {/* User */}
-      <div className="px-4 py-4 border-b border-slate-100 dark:border-slate-800">
-        <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shrink-0">
-            <User size={14} className="text-white" />
+      {/* User card */}
+      <div className="px-3 py-3 border-b border-gray-100 dark:border-slate-800">
+        <button
+          onClick={() => navigate("/settings")}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors group"
+        >
+          <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center shrink-0 text-white text-sm font-semibold">
+            {initial}
           </div>
-          <div className="overflow-hidden">
-            <p className="text-sm font-medium text-slate-800 dark:text-white truncate">
-              {user.name || "Developer"}
+          <div className="flex-1 overflow-hidden text-left">
+            <p className="text-sm font-semibold text-gray-800 dark:text-white truncate leading-none mb-0.5">
+              {user?.name || "Developer"}
             </p>
-            <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
-              {user.email || ""}
+            <p className="text-xs text-gray-400 dark:text-slate-500 truncate">
+              {user?.email || ""}
             </p>
           </div>
-        </div>
+          <ChevronRight size={14} className="text-gray-300 dark:text-slate-600 group-hover:text-gray-400 transition-colors shrink-0" />
+        </button>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 px-3 py-3 space-y-0.5">
+      {/* Label */}
+      <div className="px-5 pt-4 pb-1.5">
+        <span className="text-[10px] font-semibold tracking-[0.1em] uppercase text-gray-400 dark:text-slate-500">
+          Navigation
+        </span>
+      </div>
+
+      {/* Nav links */}
+      <nav className="flex-1 px-3 py-1 space-y-0.5">
         {NAV.map(({ to, icon: Icon, label }) => {
           const active = location.pathname === to;
+          const count  = counts[to];
           return (
             <Link
               key={to}
               to={to}
-              className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+              className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${
                 active
-                  ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/30"
-                  : "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"
+                  ? "bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300"
+                  : "text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white"
               }`}
             >
-              <Icon size={16} />
-              {label}
+              <Icon
+                size={16}
+                className={active ? "text-indigo-600 dark:text-indigo-400" : ""}
+              />
+              <span className="flex-1">{label}</span>
+              {count !== undefined && count > 0 && (
+                <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-md ${
+                  active
+                    ? "bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300"
+                    : "bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-400"
+                }`}>
+                  {count}
+                </span>
+              )}
             </Link>
           );
         })}
       </nav>
 
-      {/* Logout */}
-      <div className="px-3 pb-5 border-t border-slate-100 dark:border-slate-800 pt-3">
+      {/* Sign out */}
+      <div className="px-3 pb-4 pt-2 border-t border-gray-100 dark:border-slate-800">
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-400 dark:text-slate-500 hover:bg-red-50 dark:hover:bg-red-900/10 hover:text-red-500 dark:hover:text-red-400 transition-all duration-200"
+          className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-gray-400 dark:text-slate-500 hover:bg-red-50 dark:hover:bg-red-900/10 hover:text-red-500 dark:hover:text-red-400 transition-all duration-150"
         >
           <LogOut size={16} />
           Sign out

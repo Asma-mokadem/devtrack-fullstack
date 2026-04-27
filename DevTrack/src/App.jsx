@@ -1,4 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
 import Skills from "./pages/Skills";
@@ -10,17 +12,19 @@ import Register from "./pages/Register";
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Navigate to="/home" />} />
-        <Route path="/home" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/projects" element={<Projects />} />
-        <Route path="/skills" element={<Skills />} />
-        <Route path="/settings" element={<Settings />} />
-
-      </Routes>
+      <AuthProvider>
+        <Routes>
+          <Route path="/" element={<Navigate to="/home" replace />} />
+          <Route path="/home" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/projects"  element={<ProtectedRoute><Projects /></ProtectedRoute>} />
+          <Route path="/skills"    element={<ProtectedRoute><Skills /></ProtectedRoute>} />
+          <Route path="/settings"  element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+          <Route path="*" element={<Navigate to="/home" replace />} />
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

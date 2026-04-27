@@ -1,7 +1,7 @@
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { useDev } from "../../context/DevContext";
 
-const COLORS = ["#6366f1", "#8b5cf6", "#a78bfa", "#c4b5fd", "#e0d9fe", "#4f46e5", "#7c3aed"];
+const COLORS = ["#6366f1", "#8b5cf6", "#0ea5e9", "#10b981", "#f59e0b", "#ef4444", "#ec4899"];
 
 export default function TechPieChart() {
   const { projects } = useDev();
@@ -16,35 +16,43 @@ export default function TechPieChart() {
 
   if (data.length === 0) {
     return (
-      <div className="bg-white dark:bg-[#0d1526] border border-slate-200/70 dark:border-slate-800 rounded-2xl px-6 py-5 flex items-center justify-center h-64">
-        <p className="text-sm text-slate-400 dark:text-slate-500">No project data yet</p>
+      <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl px-6 py-5 flex flex-col h-64">
+        <p className="text-[11px] font-semibold tracking-[0.1em] uppercase text-gray-400 dark:text-slate-500 mb-4">
+          Time by technology
+        </p>
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-sm text-gray-400 dark:text-slate-500">No project data yet</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white dark:bg-[#0d1526] border border-slate-200/70 dark:border-slate-800 rounded-2xl px-6 py-5">
-      <p className="text-xs font-semibold tracking-[0.12em] uppercase text-slate-400 dark:text-slate-500 mb-4">
+    <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl px-6 py-5">
+      <p className="text-[11px] font-semibold tracking-[0.1em] uppercase text-gray-400 dark:text-slate-500 mb-4">
         Time by technology
       </p>
-      <ResponsiveContainer width="100%" height={220}>
-        <PieChart>
-          <Pie data={data} cx="50%" cy="50%" outerRadius={75} dataKey="value" label>
-            {data.map((_, i) => (
-              <Cell key={i} fill={COLORS[i % COLORS.length]} />
-            ))}
-          </Pie>
-          <Tooltip
-            contentStyle={{
-              background: "var(--tw-color-white, #fff)",
-              border: "0.5px solid #e2e8f0",
-              borderRadius: "10px",
-              fontSize: "12px",
-            }}
-          />
-          <Legend wrapperStyle={{ fontSize: "11px" }} />
-        </PieChart>
-      </ResponsiveContainer>
+      {/* Horizontal bar list */}
+      <div className="space-y-2.5">
+        {data.map(({ name, value }, i) => {
+          const max = Math.max(...data.map((d) => d.value));
+          const pct = Math.round((value / max) * 100);
+          return (
+            <div key={name}>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm text-gray-600 dark:text-slate-300">{name}</span>
+                <span className="text-sm font-semibold text-gray-800 dark:text-white">{value}h</span>
+              </div>
+              <div className="h-1.5 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-700"
+                  style={{ width: `${pct}%`, backgroundColor: COLORS[i % COLORS.length] }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
