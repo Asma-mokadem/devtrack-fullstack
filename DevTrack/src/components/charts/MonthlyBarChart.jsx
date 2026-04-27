@@ -1,40 +1,51 @@
-import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Cell, ResponsiveContainer } from "recharts";
 import { useDev } from "../../context/DevContext";
 
 export default function MonthlyBarChart() {
   const { projects } = useDev();
 
-  // Grouper projets par mois
   const monthMap = {};
-
-  projects.forEach((project) => {
-    if (!project.date) return;
-
-    const month = new Date(project.date).toLocaleString("default", {
-      month: "short",
-    });
-
+  projects.forEach((p) => {
+    if (!p.date) return;
+    const month = new Date(p.date).toLocaleString("default", { month: "short" });
     monthMap[month] = (monthMap[month] || 0) + 1;
   });
 
-  const data = Object.keys(monthMap).map((month) => ({
-    month,
-    projects: monthMap[month],
-  }));
+  const data = Object.keys(monthMap).map((month) => ({ month, projects: monthMap[month] }));
+
+  if (data.length === 0) {
+    return (
+      <div className="bg-white dark:bg-[#0d1526] border border-slate-200/70 dark:border-slate-800 rounded-2xl px-6 py-5 flex items-center justify-center h-64">
+        <p className="text-sm text-slate-400 dark:text-slate-500">No project data yet</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl w-full md:w-96">
-      <h3 className="text-white text-lg font-semibold mb-4">
-        Projects per Month
-      </h3>
-
-      <BarChart width={300} height={300} data={data}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-        <XAxis dataKey="month" stroke="#9CA3AF" />
-        <YAxis stroke="#9CA3AF" />
-        <Tooltip />
-        <Bar dataKey="projects" fill="#6366F1" radius={[5, 5, 0, 0]} />
-      </BarChart>
+    <div className="bg-white dark:bg-[#0d1526] border border-slate-200/70 dark:border-slate-800 rounded-2xl px-6 py-5">
+      <p className="text-xs font-semibold tracking-[0.12em] uppercase text-slate-400 dark:text-slate-500 mb-4">
+        Projects per month
+      </p>
+      <ResponsiveContainer width="100%" height={220}>
+        <BarChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+          <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+          <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+          <Tooltip
+            contentStyle={{
+              background: "#fff",
+              border: "0.5px solid #e2e8f0",
+              borderRadius: "10px",
+              fontSize: "12px",
+            }}
+          />
+          <Bar dataKey="projects" radius={[6, 6, 0, 0]}>
+            {data.map((_, i) => (
+              <Cell key={i} fill="#6366f1" />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
     </div>
   );
 }
