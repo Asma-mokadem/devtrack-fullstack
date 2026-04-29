@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import Layout from "../components/Layout";
 import { useAuth } from "../context/AuthContext";
@@ -5,7 +6,7 @@ import { useDev } from "../context/DevContext";
 import { useNavigate } from "react-router-dom";
 import {
   User, Mail, Lock, Shield, Database, Sun, Moon,
-  CheckCircle, AlertCircle, Trash2, LogOut, RotateCcw
+  CheckCircle, AlertCircle, Trash2, LogOut, RotateCcw,
 } from "lucide-react";
 
 function Section({ title, icon: Icon, children }) {
@@ -28,8 +29,8 @@ function Toast({ msg, type }) {
   return (
     <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 px-5 py-3 rounded-2xl shadow-xl text-sm font-semibold border ${
       isOk
-        ? "bg-green-50  dark:bg-green-900/30 border-green-200 dark:border-green-800/40 text-green-700 dark:text-green-400"
-        : "bg-red-50   dark:bg-red-900/30   border-red-200  dark:border-red-800/40  text-red-700  dark:text-red-400"
+        ? "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800/40 text-green-700 dark:text-green-400"
+        : "bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800/40 text-red-700 dark:text-red-400"
     }`}>
       {isOk ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
       {msg}
@@ -37,26 +38,20 @@ function Toast({ msg, type }) {
   );
 }
 
-const inputClass = "w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-800 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-700 focus:border-transparent transition";
+const inputClass =
+  "w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-800 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-700 focus:border-transparent transition";
 
 export default function Settings() {
   const { user, updateUser, changePassword, logout } = useAuth();
   const { theme, setTheme, clearProjects, clearSkills, resetAllData } = useDev();
   const navigate = useNavigate();
 
-  // Profile
-  const [name, setName]       = useState(user?.name || "");
-  const [username, setUsername] = useState(user?.username || "");
+  const [name, setName]         = useState(user?.name || "");
+  const [email, setEmail]       = useState(user?.email || "");
+  const [oldPw, setOldPw]       = useState("");
+  const [newPw, setNewPw]       = useState("");
+  const [confPw, setConfPw]     = useState("");
 
-  // Account
-  const [email, setEmail]     = useState(user?.email || "");
-
-  // Password
-  const [oldPw, setOldPw]     = useState("");
-  const [newPw, setNewPw]     = useState("");
-  const [confPw, setConfPw]   = useState("");
-
-  // Toast
   const [toast, setToast] = useState({ msg: "", type: "" });
 
   const showToast = (msg, type = "success") => {
@@ -64,193 +59,182 @@ export default function Settings() {
     setTimeout(() => setToast({ msg: "", type: "" }), 3000);
   };
 
-  // Handlers
-  const handleProfile = (e) => {
-    e.preventDefault();
-    if (!name.trim()) return showToast("Name cannot be empty.", "error");
-    updateUser({ name: name.trim(), username: username.trim() });
-    showToast("Profile updated successfully!");
-  };
 
-  const handleAccount = (e) => {
+  const handleProfile = async (e) => {
     e.preventDefault();
-    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return showToast("Enter a valid email address.", "error");
+    if (!name.trim()) return showToast("Le nom ne peut pas être vide.", "error");
+    try {
+      await updateUser({ name: name.trim(), email: email.trim() });
+      showToast("Profil mis à jour !");
+    } catch (err) {
+      showToast(err.message || "Erreur lors de la mise à jour.", "error");
     }
-    updateUser({ email: email.trim() });
-    showToast("Email updated successfully!");
   };
 
-  const handlePassword = (e) => {
+  const handlePassword = async (e) => {
     e.preventDefault();
-    if (!oldPw || !newPw || !confPw) return showToast("All password fields are required.", "error");
-    if (newPw.length < 6)            return showToast("New password must be at least 6 characters.", "error");
-    if (newPw !== confPw)            return showToast("New passwords do not match.", "error");
-    const result = changePassword(oldPw, newPw);
-    if (!result.ok) return showToast(result.error, "error");
-    setOldPw(""); setNewPw(""); setConfPw("");
-    showToast("Password changed successfully!");
+    if (!oldPw || !newPw || !confPw)
+      return showToast("Tous les champs sont requis.", "error");
+    if (newPw.length < 6)
+      return showToast("Le nouveau mot de passe doit faire au moins 6 caractères.", "error");
+    if (newPw !== confPw)
+      return showToast("Les mots de passe ne correspondent pas.", "error");
+    try {
+      await changePassword(oldPw, newPw);
+      setOldPw(""); setNewPw(""); setConfPw("");
+      showToast("Mot de passe modifié !");
+    } catch (err) {
+      showToast(err.message || "Erreur lors du changement de mot de passe.", "error");
+    }
   };
 
-  const handleLogoutAll = () => {
+  const handleLogout = () => {
     logout();
     navigate("/login");
   };
 
   const confirmClear = (label, action) => {
-    if (window.confirm(`Are you sure you want to ${label}? This cannot be undone.`)) {
-      action();
-      showToast(`${label.charAt(0).toUpperCase() + label.slice(1)} completed.`);
+    if (window.confirm(`Êtes-vous sûr de vouloir ${label} ? Cette action est irréversible.`)) {
+      action()
+        .then(() => showToast(`${label.charAt(0).toUpperCase() + label.slice(1)} effectué.`))
+        .catch((err) => showToast(err.message || "Erreur.", "error"));
     }
   };
 
   return (
-    <Layout title="Settings">
+    <Layout title="Paramètres">
       <div className="max-w-2xl">
-        {/* Profile */}
-        <Section title="Profile" icon={User}>
+        {/* Profil */}
+        <Section title="Profil" icon={User}>
           <form onSubmit={handleProfile} className="space-y-4">
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Full name</label>
-                <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder="Alex Developer" />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Username</label>
-                <input className={inputClass} value={username} onChange={(e) => setUsername(e.target.value)} placeholder="alexdev" />
-              </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Nom complet</label>
+              <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder="Alex Développeur" />
             </div>
             <div>
               <p className="text-xs text-gray-400 dark:text-slate-500 mb-3">
-                Currently logged in as <span className="font-semibold text-gray-600 dark:text-slate-300">{user?.email}</span>
+                Connecté en tant que <span className="font-semibold text-gray-600 dark:text-slate-300">{user?.email}</span>
               </p>
             </div>
-            <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors shadow-sm shadow-indigo-200 dark:shadow-indigo-900/30">
-              Save Profile
+            <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors shadow-sm">
+              Sauvegarder
             </button>
           </form>
         </Section>
 
-        {/* Account / Email */}
-        <Section title="Account" icon={Mail}>
-          <form onSubmit={handleAccount} className="space-y-4">
+        {/* Email */}
+        <Section title="Email" icon={Mail}>
+          <form onSubmit={handleProfile} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Email address</label>
-              <input type="email" className={inputClass} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+              <label className="block text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Adresse email</label>
+              <input type="email" className={inputClass} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="vous@exemple.com" />
             </div>
-            <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors shadow-sm shadow-indigo-200 dark:shadow-indigo-900/30">
-              Update Email
+            <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors shadow-sm">
+              Mettre à jour
             </button>
           </form>
         </Section>
 
-        {/* Password */}
-        <Section title="Change Password" icon={Lock}>
+        {/* Mot de passe */}
+        <Section title="Changer le mot de passe" icon={Lock}>
           <form onSubmit={handlePassword} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Current password</label>
+              <label className="block text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Mot de passe actuel</label>
               <input type="password" className={inputClass} value={oldPw} onChange={(e) => setOldPw(e.target.value)} placeholder="••••••••" />
             </div>
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">New password</label>
-                <input type="password" className={inputClass} value={newPw} onChange={(e) => setNewPw(e.target.value)} placeholder="Min. 6 characters" />
+                <label className="block text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Nouveau mot de passe</label>
+                <input type="password" className={inputClass} value={newPw} onChange={(e) => setNewPw(e.target.value)} placeholder="6 caractères min." />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Confirm new password</label>
+                <label className="block text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Confirmer</label>
                 <input type="password" className={inputClass} value={confPw} onChange={(e) => setConfPw(e.target.value)} placeholder="••••••••" />
               </div>
             </div>
-            <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors shadow-sm shadow-indigo-200 dark:shadow-indigo-900/30">
-              Change Password
+            <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors shadow-sm">
+              Changer
             </button>
           </form>
         </Section>
 
-        {/* Appearance */}
-        <Section title="Appearance" icon={Sun}>
+        {/* Apparence */}
+        <Section title="Apparence" icon={Sun}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium text-gray-800 dark:text-white text-sm">Theme</p>
-              <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">Switch between light and dark mode</p>
+              <p className="font-medium text-gray-800 dark:text-white text-sm">Thème</p>
+              <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">Basculer entre clair et sombre</p>
             </div>
             <button
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className={`relative w-14 h-7 rounded-full transition-colors duration-300 ${
-                theme === "dark" ? "bg-indigo-600" : "bg-gray-200 dark:bg-slate-700"
-              }`}
+              className={`relative w-14 h-7 rounded-full transition-colors duration-300 ${theme === "dark" ? "bg-indigo-600" : "bg-gray-200 dark:bg-slate-700"}`}
             >
-              <span className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white shadow-sm flex items-center justify-center transition-transform duration-300 ${
-                theme === "dark" ? "translate-x-7" : ""
-              }`}>
-                {theme === "dark"
-                  ? <Moon size={12} className="text-indigo-600" />
-                  : <Sun  size={12} className="text-amber-500" />
-                }
+              <span className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white shadow-sm flex items-center justify-center transition-transform duration-300 ${theme === "dark" ? "translate-x-7" : ""}`}>
+                {theme === "dark" ? <Moon size={12} className="text-indigo-600" /> : <Sun size={12} className="text-amber-500" />}
               </span>
             </button>
           </div>
         </Section>
 
-        {/* Security */}
-        <Section title="Security" icon={Shield}>
+        {/* Sécurité */}
+        <Section title="Sécurité" icon={Shield}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium text-gray-800 dark:text-white text-sm">Sign out all sessions</p>
-              <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">Logs you out and clears your session data</p>
+              <p className="font-medium text-gray-800 dark:text-white text-sm">Déconnexion</p>
+              <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">Vous déconnecte et efface la session</p>
             </div>
             <button
-              onClick={handleLogoutAll}
+              onClick={handleLogout}
               className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 dark:border-slate-700 text-sm font-medium text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
             >
               <LogOut size={14} />
-              Sign out
+              Se déconnecter
             </button>
           </div>
         </Section>
 
-        {/* Data */}
-        <Section title="Data Management" icon={Database}>
+        {/* Données */}
+        <Section title="Gestion des données" icon={Database}>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium text-gray-800 dark:text-white text-sm">Clear all projects</p>
-                <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">Permanently delete all project data</p>
+                <p className="font-medium text-gray-800 dark:text-white text-sm">Supprimer tous les projets</p>
+                <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">Suppression permanente de tous les projets</p>
               </div>
               <button
-                onClick={() => confirmClear("clear all projects", clearProjects)}
+                onClick={() => confirmClear("supprimer tous les projets", clearProjects)}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl border border-red-200 dark:border-red-800/40 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
               >
                 <Trash2 size={14} />
-                Clear
+                Supprimer
               </button>
             </div>
 
             <div className="border-t border-gray-100 dark:border-slate-800 pt-4 flex items-center justify-between">
               <div>
-                <p className="font-medium text-gray-800 dark:text-white text-sm">Clear all skills</p>
-                <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">Permanently delete all skill data</p>
+                <p className="font-medium text-gray-800 dark:text-white text-sm">Supprimer toutes les compétences</p>
+                <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">Suppression permanente de toutes les compétences</p>
               </div>
               <button
-                onClick={() => confirmClear("clear all skills", clearSkills)}
+                onClick={() => confirmClear("supprimer toutes les compétences", clearSkills)}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl border border-red-200 dark:border-red-800/40 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
               >
                 <Trash2 size={14} />
-                Clear
+                Supprimer
               </button>
             </div>
 
             <div className="border-t border-gray-100 dark:border-slate-800 pt-4 flex items-center justify-between">
               <div>
-                <p className="font-medium text-gray-800 dark:text-white text-sm">Reset all app data</p>
-                <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">Deletes all projects and skills at once</p>
+                <p className="font-medium text-gray-800 dark:text-white text-sm">Réinitialiser toutes les données</p>
+                <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">Supprime projets et compétences en une fois</p>
               </div>
               <button
-                onClick={() => confirmClear("reset all app data", resetAllData)}
+                onClick={() => confirmClear("réinitialiser toutes les données", resetAllData)}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl border border-red-200 dark:border-red-800/40 bg-red-50 dark:bg-red-900/10 text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors"
               >
                 <RotateCcw size={14} />
-                Reset all
+                Tout réinitialiser
               </button>
             </div>
           </div>

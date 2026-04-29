@@ -1,67 +1,131 @@
-import { createContext, useContext, useState, useEffect } from "react";
+
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { projectsAPI, skillsAPI } from "../services/api";
+import { useAuth } from "./AuthContext";
 
 const DevContext = createContext();
 
 export function DevProvider({ children }) {
-  const [skills, setSkills] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("skills")) || []; } catch { return []; }
-  });
+  const { user } = useAuth();
 
-  const [projects, setProjects] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("projects")) || []; } catch { return []; }
-  });
+  const [projects, setProjects] = useState([]);
+  const [skills, setSkills]     = useState([]);
+  const [loadingData, setLoadingData] = useState(false);
 
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem("theme") || "light";
-  });
+  const [theme, setThemeState] = useState(
+    () => localStorage.getItem("theme") || "light"
+  );
 
-  const [accentColor, setAccentColor] = useState(() => {
-    return localStorage.getItem("accentColor") || "indigo";
-  });
+  const setTheme = useCallback((t) => {
+    setThemeState(t);
+    localStorage.setItem("theme", t);
+  }, []);
 
-  // Persist skills
-  useEffect(() => {
-    localStorage.setItem("skills", JSON.stringify(skills));
-  }, [skills]);
-
-  // Persist projects
-  useEffect(() => {
-    localStorage.setItem("projects", JSON.stringify(projects));
-  }, [projects]);
-
-  // Apply theme to <html>
   useEffect(() => {
     const root = document.documentElement;
-    if (theme === "dark") {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
-    localStorage.setItem("theme", theme);
+    theme === "dark" ? root.classList.add("dark") : root.classList.remove("dark");
   }, [theme]);
 
   useEffect(() => {
-    localStorage.setItem("accentColor", accentColor);
-  }, [accentColor]);
+    if (!user) {
+      setProjects([]);
+      setSkills([]);
+      return;
+    }
+    setLoadingData(true);
+    Promise.all([projectsAPI.getAll(), skillsAPI.getAll()])
+      .then(([projData, skillData]) => {
+        setProjects(projData.projects || []);
+        setSkills(skillData.skills || []);
+      })
+      .catch((err) => console.error("Erreur chargement données :", err))
+      .finally(() => setLoadingData(false));
+  }, [user]);
 
-  // Skills CRUD
-  const addSkill    = (skill)   => setSkills((prev) => [...prev, skill]);
-  const deleteSkill = (id)      => setSkills((prev) => prev.filter((s) => s.id !== id));
-  const updateSkill = (id, updated) =>
-    setSkills((prev) => prev.map((s) => (s.id === id ? { ...s, ...updated } : s)));
 
-  // Projects CRUD
-  const addProject    = (project) => setProjects((prev) => [...prev, project]);
-  const deleteProject = (id)      => setProjects((prev) => prev.filter((p) => p.id !== id));
-  const updateProject = (id, updated) =>
-    setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, ...updated } : p)));
+  const addProject = useCallback(async (payload) => {
 
-  // Data reset helpers
-  const clearProjects = () => { setProjects([]); localStorage.removeItem("projects"); };
-  const clearSkills   = () => { setSkills([]);   localStorage.removeItem("skills"); };
-  const resetAllData  = () => { clearProjects(); clearSkills(); };
+    const backendPayload = {
+      title:      payload.name,
+      techStack:  [payload.tech],
+      status:     payload.status?.toLowerCase().replace(" ", " ") || "pending",
+      hoursSpent: payload.duration,
+      progress:   payload.difficulty * 10, // approximation
+      description: payload.description || "",
+    };
+    const data = await projectsAPI.create(backendPayload);
+    // Stocker le projet au format frontend enrichi avec l'_id Mongo
+    const newProject = _backendToFrontendProject(data.project);
+    setProjects((prev) => [...prev, newProject]);
+    return newProject;
+  }, []);
 
-  // Computed stats
+  const deleteProject = useCallback(async (id) => {
+    await projectsAPI.delete(id);
+    setProjects((prev) => prev.filter((p) => p.id !== id));
+  }, []);
+
+  const updateProject = useCallback(async (id, updates) => {
+    const backendPayload = {
+      title:      updates.name,
+      techStack:  [updates.tech],
+      status:     updates.status?.toLowerCase() || "pending",
+      hoursSpent: updates.duration,
+      progress:   updates.difficulty ? updates.difficulty * 10 : undefined,
+    };
+    const data = await projectsAPI.update(id, backendPayload);
+    const updated = _backendToFrontendProject(data.project);
+    setProjects((prev) => prev.map((p) => (p.id === id ? updated : p)));
+    return updated;
+  }, []);
+
+
+  const addSkill = useCallback(async (payload) => {
+    const data = await skillsAPI.create({
+      name:     payload.name,
+      level:    payload.level,
+      category: payload.category || "Other",
+    });
+    const newSkill = _backendToFrontendSkill(data.skill);
+    setSkills((prev) => [...prev, newSkill]);
+    return newSkill;
+  }, []);
+
+  const deleteSkill = useCallback(async (id) => {
+    await skillsAPI.delete(id);
+    setSkills((prev) => prev.filter((s) => s.id !== id));
+  }, []);
+
+  const updateSkill = useCallback(async (id, updates) => {
+    const data = await skillsAPI.update(id, {
+      name:     updates.name,
+      level:    updates.level,
+      category: updates.category,
+    });
+    const updated = _backendToFrontendSkill(data.skill);
+    setSkills((prev) => prev.map((s) => (s.id === id ? updated : s)));
+    return updated;
+  }, []);
+
+
+  const clearProjects = useCallback(async () => {
+    await Promise.all(projects.map((p) => projectsAPI.delete(p.id)));
+    setProjects([]);
+  }, [projects]);
+
+  const clearSkills = useCallback(async () => {
+    await Promise.all(skills.map((s) => skillsAPI.delete(s.id)));
+    setSkills([]);
+  }, [skills]);
+
+  const resetAllData = useCallback(async () => {
+    await Promise.all([
+      ...projects.map((p) => projectsAPI.delete(p.id)),
+      ...skills.map((s) => skillsAPI.delete(s.id)),
+    ]);
+    setProjects([]);
+    setSkills([]);
+  }, [projects, skills]);
   const totalHours = projects.reduce((a, p) => a + (p.duration || 0), 0);
   const averageDifficulty =
     projects.length > 0
@@ -72,13 +136,23 @@ export function DevProvider({ children }) {
   return (
     <DevContext.Provider
       value={{
-        skills, projects,
-        addSkill, deleteSkill, updateSkill,
-        addProject, deleteProject, updateProject,
-        clearProjects, clearSkills, resetAllData,
-        totalHours, averageDifficulty, completedProjects,
-        theme, setTheme,
-        accentColor, setAccentColor,
+        projects,
+        skills,
+        loadingData,
+        addProject,
+        deleteProject,
+        updateProject,
+        addSkill,
+        deleteSkill,
+        updateSkill,
+        clearProjects,
+        clearSkills,
+        resetAllData,
+        totalHours,
+        averageDifficulty,
+        completedProjects,
+        theme,
+        setTheme,
       }}
     >
       {children}
@@ -88,4 +162,32 @@ export function DevProvider({ children }) {
 
 export function useDev() {
   return useContext(DevContext);
+}
+
+function _backendToFrontendProject(p) {
+  const statusMap = {
+    pending:     "Pending",
+    "in progress": "In Progress",
+    completed:   "Completed",
+  };
+  return {
+    id:         p._id,
+    name:       p.title,
+    tech:       Array.isArray(p.techStack) ? p.techStack.join(", ") : p.techStack || "",
+    status:     statusMap[p.status] || "Pending",
+    duration:   p.hoursSpent || 0,
+    difficulty: p.progress ? Math.round(p.progress / 10) : 5,
+    date:       p.createdAt || new Date().toISOString(),
+    description: p.description || "",
+    githubUrl:  p.githubUrl || "",
+  };
+}
+
+function _backendToFrontendSkill(s) {
+  return {
+    id:       s._id,
+    name:     s.name,
+    level:    s.level,
+    category: s.category || "Other",
+  };
 }

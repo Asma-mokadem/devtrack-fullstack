@@ -1,43 +1,46 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
 
 export default function Login() {
   const navigate = useNavigate();
   const { user, login } = useAuth();
 
-  const [email, setEmail]       = useState("");
+  const [email, setEmail]     = useState("");
   const [password, setPassword] = useState("");
-  const [showPw, setShowPw]     = useState(false);
-  const [error, setError]       = useState("");
-  const [loading, setLoading]   = useState(false);
+  const [showPw, setShowPw]   = useState(false);
+  const [error, setError]     = useState("");
+  const [loading, setLoading] = useState(false);
 
-  // Redirect if already logged in
   useEffect(() => {
     if (user) navigate("/dashboard", { replace: true });
   }, [user, navigate]);
 
   const validate = () => {
-    if (!email.trim()) return "Please enter your email.";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "Please enter a valid email.";
-    if (!password) return "Please enter your password.";
+    if (!email.trim()) return "Veuillez entrer votre email.";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "Email invalide.";
+    if (!password) return "Veuillez entrer votre mot de passe.";
     return null;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+
     const validErr = validate();
     if (validErr) { setError(validErr); return; }
 
     setLoading(true);
-    // small artificial delay for UX
-    await new Promise((r) => setTimeout(r, 400));
-    const result = login({ email, password });
-    setLoading(false);
-
-    if (!result.ok) { setError(result.error); return; }
-    navigate("/dashboard", { replace: true });
+    try {
+      await login({ email, password });
+      navigate("/dashboard", { replace: true });
+    } catch (err) {
+      setError(err.message || "Identifiants invalides.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -59,8 +62,8 @@ export default function Login() {
         </div>
 
         <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl p-8 shadow-xl shadow-gray-100 dark:shadow-black/30">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Welcome back</h2>
-          <p className="text-sm text-gray-500 dark:text-slate-400 mb-7">Sign in to your DevTrack account</p>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Bon retour</h2>
+          <p className="text-sm text-gray-500 dark:text-slate-400 mb-7">Connectez-vous à votre compte DevTrack</p>
 
           {error && (
             <div className="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/40 text-red-600 dark:text-red-400 text-sm rounded-xl px-4 py-3 mb-5">
@@ -70,7 +73,6 @@ export default function Login() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email */}
             <div>
               <label className="block text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">
                 Email
@@ -79,15 +81,14 @@ export default function Login() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
+                placeholder="vous@exemple.com"
                 className="w-full px-4 py-3 text-sm rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-800 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-700 focus:border-transparent transition"
               />
             </div>
 
-            {/* Password */}
             <div>
               <label className="block text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">
-                Password
+                Mot de passe
               </label>
               <div className="relative">
                 <input
@@ -112,14 +113,14 @@ export default function Login() {
               disabled={loading}
               className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition-colors shadow-md shadow-indigo-200 dark:shadow-indigo-900/30 mt-2"
             >
-              {loading ? "Signing in…" : "Sign in"}
+              {loading ? "Connexion…" : "Se connecter"}
             </button>
           </form>
 
           <p className="text-center text-sm text-gray-500 dark:text-slate-400 mt-6">
-            Don't have an account?{" "}
+            Pas encore de compte ?{" "}
             <Link to="/register" className="text-indigo-600 dark:text-indigo-400 font-semibold hover:underline">
-              Create account
+              Créer un compte
             </Link>
           </p>
         </div>
