@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    // On cible une version moderne de JavaScript
+    "target": "ES2020",
+    // On utilise le système de modules CommonJS (compatible Node.js)
+    "module": "commonjs",
+    // Le code compilé ira dans le dossier "dist"
+    "outDir": "./dist",
+    // TypeScript part de "src" pour compiler
+    "rootDir": "./src",
+    // Active des vérifications strictes (bonne pratique)
+    "strict": true,
+    // Permet d'importer des modules CommonJS plus facilement
+    "esModuleInterop": true,
+    // Active les décorateurs (utile avec Mongoose)
+    "experimentalDecorators": true,
+    // Ignore les erreurs sur les libs sans types
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
